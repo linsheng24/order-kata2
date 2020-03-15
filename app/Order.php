@@ -41,23 +41,31 @@ class Order
 
   public function discount()
   {
-    $discount_num = floor(array_reduce($this->menu, function ($carry, $item) { 
+    $burgers = array_values(array_filter($this->menu, function ($item) { 
+      return $item->is_burger == true;
+    }));
+
+    usort($burgers,function ($a, $b) {
+      return $a->price > $b->price;
+    });
+
+    $discount_num = floor(array_reduce($burgers, function ($carry, $item) {
       return $carry + $this->foodCount($item->name);
     }) / 2);
 
-    $pork_price = array_values(array_filter($this->menu, function ($item) {
-      return $item->name == "豬肉漢堡";
-    }))[0]->price;
+    foreach($burgers as $value) {  
     
-    $beef_price = array_values(array_filter($this->menu, function ($item) {
-      return $item->name == "牛肉漢堡";
-    }))[0]->price;
+      if ($discount_num > 0) {
+        if ($discount_num < $this->foodCount($value->name)) {
+          $this->discount_price += ($discount_num * $value->price / 2);
+        } else {
+          $this->discount_price += ($this->foodCount($value->name) * $value->price / 2);
+        }
+      }
+      
+      $discount_num -= $this->foodCount($value->name);
+    } 
 
-    if ($discount_num < $this->foodCount("豬肉漢堡")) {
-      $this->discount_price = $pork_price / 2 * $discount_num;
-    } else {
-      $this->discount_price = $pork_price / 2 * $this->foodCount("豬肉漢堡") + $beef_price / 2 * ($discount_num - $this->foodCount("豬肉漢堡"));
-    }
   }
 
   public function setMember()
